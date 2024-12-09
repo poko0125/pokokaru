@@ -46,23 +46,27 @@
         }
 
         .calendar {
-            margin: 20px 0;
-        }
+    margin: 20px 0;
+    width: 100%;
+}
 
-        .calendar table {
+.calendar table {
     width: 100%;
     max-width: 800px;
     border-collapse: collapse;
     margin: 0 auto;
     font-size: 18px;
+    table-layout: fixed;
 }
 
 .calendar th, .calendar td {
-    padding: 15px;
+    padding: 20px;
     border: 1px solid #ddd;
     text-align: center;
+    width: calc(100% / 7);
+    height: 60px;
+    vertical-align: middle;
 }
-
         .default-monday-friday {
             background-color: #cccccc;
         }
