@@ -113,14 +113,14 @@
 </head>
 <body>
     <div class="question-screen">
-        <h2>今日はどこに行く？</h2>
-        <div class="activity-buttons">
-            <button class="activity-button gym-button" onclick="toggleActivity('gym')">ジム</button>
-            <button class="activity-button pool-button" onclick="toggleActivity('pool')">プール</button>
-            <button class="activity-button yoga-button" onclick="toggleActivity('yoga')">ヨガ</button>
-        </div>
-        <button onclick="handleDecision()">決定</button>
+    <h2>今日はどこに行く？</h2>
+    <div class="activity-buttons">
+        <button class="activity-button gym-button" onclick="toggleInitialActivity('gym')">ジム</button>
+        <button class="activity-button pool-button" onclick="toggleInitialActivity('pool')">プール</button>
+        <button class="activity-button yoga-button" onclick="toggleInitialActivity('yoga')">ヨガ</button>
     </div>
+    <button onclick="handleInitialDecision()">決定</button>
+</div>
 
     <div class="message-screen">
         <div id="message"></div>
@@ -138,6 +138,40 @@
         </div>
     </div>
     <script>
+        <script>
+    // ここに新しいコードを追加
+    let initialSelectedActivities = new Set();
+
+    function toggleInitialActivity(activity) {
+        const button = document.querySelector(`.${activity}-button`);
+        if (initialSelectedActivities.has(activity)) {
+            initialSelectedActivities.delete(activity);
+            button.classList.remove('selected');
+        } else {
+            initialSelectedActivities.add(activity);
+            button.classList.add('selected');
+        }
+    }
+
+    function handleInitialDecision() {
+        const today = new Date();
+        const isMonday = today.getDay() === 1;
+        const isFriday = today.getDay() === 5;
+
+        if (isMonday && (initialSelectedActivities.has('gym') || initialSelectedActivities.has('pool'))) {
+            showMessage('今日はジムとプールは定休日だよ！', true);
+        } else if (isFriday && initialSelectedActivities.has('yoga')) {
+            showMessage('今日はヨガは定休日だよ！', true);
+        } else {
+            showMessage('選択完了！');
+        }
+        initialSelectedActivities.clear();
+    }
+
+    // 既存のコード
+    let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
+    let selectedActivities = new Set();
+    // 以下既存のコード...
     let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
     let selectedActivities = new Set();
 
