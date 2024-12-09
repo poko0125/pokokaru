@@ -159,20 +159,19 @@
     // 以前のshowMessage関数は変更なし
 
     function handleDecision() {
-        const today = new Date();
-        const isMonday = today.getDay() === 1;
+    const today = new Date();
+    const isMonday = today.getDay() === 1;
+    const isFriday = today.getDay() === 5;
 
-        if (isMonday) {
-            if (selectedActivities.has('gym') || selectedActivities.has('pool')) {
-                showMessage('今日はジムとプールは定休日だよ！', true);
-            } else if (selectedActivities.has('yoga')) {
-                showMessage('今日はヨガは定休日だよ！', true);
-            }
-        } else {
-            showMessage('選択完了！');
-        }
-        selectedActivities.clear(); // 選択をクリア
+    if (isMonday && (selectedActivities.has('gym') || selectedActivities.has('pool'))) {
+        showMessage('今日はジムとプールは定休日だよ！', true);
+    } else if (isFriday && selectedActivities.has('yoga')) {
+        showMessage('今日はヨガは定休日だよ！', true);
+    } else {
+        showMessage('選択完了！');
     }
+    selectedActivities.clear();
+}
 
     function handleTodayActivities() {
         const today = new Date();
@@ -191,26 +190,49 @@
         }
     }
 
-    function updateTodayButtons() {
-        const buttonContainer = document.getElementById('todayButtons');
-        buttonContainer.innerHTML = '';
+   function updateTodayButtons() {
+    const today = new Date();
+    const isMonday = today.getDay() === 1;
+    const isFriday = today.getDay() === 5;
+    const buttonContainer = document.getElementById('todayButtons');
+    buttonContainer.innerHTML = '';
 
-        const activities = [
-            {id: 'gym', name: 'ジム', color: 'red'},
-            {id: 'pool', name: 'プール', color: 'blue'},
-            {id: 'yoga', name: 'ヨガ', color: 'purple'},
-            {id: 'breathing', name: '呼吸はした', color: 'beige'}
-        ];
+    // 全てのアクティビティを配列で定義
+    const allActivities = [
+        { id: 'gym', name: 'ジム', color: '#ff9999' },
+        { id: 'pool', name: 'プール', color: '#99ccff' },
+        { id: 'yoga', name: 'ヨガ', color: '#cc99ff' },
+        { id: 'breathing', name: '呼吸はした', color: '#f5e6d3' }
+    ];
 
-        activities.forEach(activity => {
-            const button = document.createElement('button');
-            button.className = `activity-button ${activity.id}-button`;
-            button.setAttribute('data-activity', activity.id);
-            button.textContent = activity.name;
-            button.onclick = () => toggleActivity(activity.id);
-            buttonContainer.appendChild(button);
-        });
+    // 表示するアクティビティをフィルタリング
+    let availableActivities = [...allActivities];
+    if (isMonday) {
+        availableActivities = allActivities.filter(a => a.id !== 'gym' && a.id !== 'pool');
+    } else if (isFriday) {
+        availableActivities = allActivities.filter(a => a.id !== 'yoga');
     }
+
+    // ボタンの作成
+    availableActivities.forEach(activity => {
+        const button = document.createElement('button');
+        button.className = `activity-button ${activity.id}-button`;
+        button.textContent = activity.name;
+        button.onclick = () => toggleActivity(activity.id);
+        buttonContainer.appendChild(button);
+    });
+}
+
+function toggleActivity(activity) {
+    const button = document.querySelector(`.${activity}-button`);
+    if (selectedActivities.has(activity)) {
+        selectedActivities.delete(activity);
+        button.classList.remove('selected');
+    } else {
+        selectedActivities.add(activity);
+        button.classList.add('selected');
+    }
+}
 
     function updateCalendar() {
         const year = new Date().getFullYear();
