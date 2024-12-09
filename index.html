@@ -137,10 +137,29 @@
             <button onclick="handleTodayActivities()">決定</button>
         </div>
     </div>
-    <script>
-        <script>
-    // ここに新しいコードを追加
+    // JavaScriptの部分だけを修正します。<script>タグから</script>タグまでを以下のコードに置き換えてください
+
+<script>
     let initialSelectedActivities = new Set();
+    let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
+    let selectedActivities = new Set();
+
+    function saveData() {
+        localStorage.setItem('activityData', JSON.stringify(gymData));
+    }
+
+    function showMessage(message, isError = false) {
+        document.querySelector('.question-screen').style.display = 'none';
+        const messageScreen = document.querySelector('.message-screen');
+        const messageDiv = document.getElementById('message');
+        messageScreen.style.display = 'block';
+        messageDiv.className = isError ? 'message-red' : 'message-green';
+        messageDiv.textContent = message;
+
+        setTimeout(() => {
+            showCalendar();
+        }, 2000);
+    }
 
     function toggleInitialActivity(activity) {
         const button = document.querySelector(`.${activity}-button`);
@@ -168,19 +187,8 @@
         initialSelectedActivities.clear();
     }
 
-    // 既存のコード
-    let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
-    let selectedActivities = new Set();
-    // 以下既存のコード...
-    let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
-    let selectedActivities = new Set();
-
-    function saveData() {
-        localStorage.setItem('activityData', JSON.stringify(gymData));
-    }
-
     function toggleActivity(activity) {
-        const button = document.querySelector(`.${activity}-button[data-activity="${activity}"]`);
+        const button = document.querySelector(`.${activity}-button`);
         if (selectedActivities.has(activity)) {
             selectedActivities.delete(activity);
             button.classList.remove('selected');
@@ -190,23 +198,6 @@
         }
     }
 
-    // 以前のshowMessage関数は変更なし
-
-    function handleDecision() {
-    const today = new Date();
-    const isMonday = today.getDay() === 1;
-    const isFriday = today.getDay() === 5;
-
-    if (isMonday && (selectedActivities.has('gym') || selectedActivities.has('pool'))) {
-        showMessage('今日はジムとプールは定休日だよ！', true);
-    } else if (isFriday && selectedActivities.has('yoga')) {
-        showMessage('今日はヨガは定休日だよ！', true);
-    } else {
-        showMessage('選択完了！');
-    }
-    selectedActivities.clear();
-}
-
     function handleTodayActivities() {
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
@@ -215,58 +206,66 @@
             gymData[dateStr] = Array.from(selectedActivities);
             saveData();
             updateCalendar();
-            selectedActivities.clear(); // 選択をクリア
+            selectedActivities.clear();
             
-            // ボタンの選択状態をリセット
             document.querySelectorAll('.activity-button').forEach(button => {
                 button.classList.remove('selected');
             });
         }
     }
 
-   function updateTodayButtons() {
-    const today = new Date();
-    const isMonday = today.getDay() === 1;
-    const isFriday = today.getDay() === 5;
-    const buttonContainer = document.getElementById('todayButtons');
-    buttonContainer.innerHTML = '';
+    function updateTodayButtons() {
+        const today = new Date();
+        const isMonday = today.getDay() === 1;
+        const isFriday = today.getDay() === 5;
+        const buttonContainer = document.getElementById('todayButtons');
+        buttonContainer.innerHTML = '';
 
-    // 全てのアクティビティを配列で定義
-    const allActivities = [
-        { id: 'gym', name: 'ジム', color: '#ff9999' },
-        { id: 'pool', name: 'プール', color: '#99ccff' },
-        { id: 'yoga', name: 'ヨガ', color: '#cc99ff' },
-        { id: 'breathing', name: '呼吸はした', color: '#f5e6d3' }
-    ];
+        const allActivities = [
+            { id: 'gym', name: 'ジム', color: '#ff9999' },
+            { id: 'pool', name: 'プール', color: '#99ccff' },
+            { id: 'yoga', name: 'ヨガ', color: '#cc99ff' },
+            { id: 'breathing', name: '呼吸はした', color: '#f5e6d3' }
+        ];
 
-    // 表示するアクティビティをフィルタリング
-    let availableActivities = [...allActivities];
-    if (isMonday) {
-        availableActivities = allActivities.filter(a => a.id !== 'gym' && a.id !== 'pool');
-    } else if (isFriday) {
-        availableActivities = allActivities.filter(a => a.id !== 'yoga');
+        let availableActivities = [...allActivities];
+        if (isMonday) {
+            availableActivities = allActivities.filter(a => a.id !== 'gym' && a.id !== 'pool');
+        } else if (isFriday) {
+            availableActivities = allActivities.filter(a => a.id !== 'yoga');
+        }
+
+        availableActivities.forEach(activity => {
+            const button = document.createElement('button');
+            button.className = `activity-button ${activity.id}-button`;
+            button.style.backgroundColor = activity.color;
+            button.textContent = activity.name;
+            button.onclick = () => toggleActivity(activity.id);
+            buttonContainer.appendChild(button);
+        });
     }
 
-    // ボタンの作成
-    availableActivities.forEach(activity => {
-        const button = document.createElement('button');
-        button.className = `activity-button ${activity.id}-button`;
-        button.textContent = activity.name;
-        button.onclick = () => toggleActivity(activity.id);
-        buttonContainer.appendChild(button);
-    });
-}
-
-function toggleActivity(activity) {
-    const button = document.querySelector(`.${activity}-button`);
-    if (selectedActivities.has(activity)) {
-        selectedActivities.delete(activity);
-        button.classList.remove('selected');
-    } else {
-        selectedActivities.add(activity);
-        button.classList.add('selected');
+    function showCalendar() {
+        document.querySelector('.message-screen').style.display = 'none';
+        document.querySelector('.calendar-screen').style.display = 'block';
+        
+        const today = new Date();
+        const monthSelector = document.getElementById('monthSelector');
+        monthSelector.innerHTML = '';
+        
+        for (let i = 1; i <= 12; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `${i}月`;
+            if (i === today.getMonth() + 1) {
+                option.selected = true;
+            }
+            monthSelector.appendChild(option);
+        }
+        
+        updateCalendar();
+        updateTodayButtons();
     }
-}
 
     function updateCalendar() {
         const year = new Date().getFullYear();
@@ -354,7 +353,6 @@ function toggleActivity(activity) {
         return gradientString + ')';
     }
 
-    // イベントリスナーと日付チェック関数は変更なし
     document.getElementById('monthSelector').addEventListener('change', updateCalendar);
 
     function checkDate() {
