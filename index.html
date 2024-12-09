@@ -15,13 +15,13 @@
             padding: 20px;
         }
 
-        .question-screen, .message-screen, .calendar-screen {
+        .screen {
             text-align: center;
             width: 100%;
             display: none;
         }
 
-        .question-screen {
+        .screen.active {
             display: block;
         }
 
@@ -32,31 +32,17 @@
             cursor: pointer;
             border: none;
             border-radius: 5px;
+            transition: all 0.3s ease;
         }
 
         .activity-button {
             min-width: 120px;
         }
 
-        .gym-button {
-            background-color: #ff9999;
-        }
-
-        .pool-button {
-            background-color: #99ccff;
-        }
-
-        .yoga-button {
-            background-color: #cc99ff;
-        }
-
-        .breathing-button {
-            background-color: #f5e6d3;
-        }
-
         .selected {
             opacity: 0.7;
             border: 2px solid #333;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
 
         .calendar {
@@ -71,32 +57,10 @@
         .calendar th, .calendar td {
             padding: 10px;
             border: 1px solid #ddd;
-            position: relative;
         }
 
-        .calendar td {
-            cursor: pointer;
-        }
-
-        .default-monday-friday {
+        .rest-day {
             background-color: #cccccc;
-        }
-
-        .split-cell {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .message-green {
-            background-color: lightgreen;
-            padding: 20px;
-            border-radius: 5px;
-        }
-
-        .message-red {
-            background-color: pink;
-            padding: 20px;
-            border-radius: 5px;
         }
 
         .month-selector {
@@ -104,271 +68,236 @@
             padding: 5px;
             font-size: 16px;
         }
-.selected {
-    opacity: 0.7;
-    border: 2px solid #333;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
-}
-        .activity-stats {
+
+        .stats {
             margin: 20px 0;
             text-align: left;
+        }
+
+        .message {
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .message.error {
+            background-color: pink;
+        }
+
+        .message.success {
+            background-color: lightgreen;
         }
     </style>
 </head>
 <body>
-    <div class="question-screen">
-    <h2>今日はどこに行く？</h2>
-    <div class="activity-buttons">
-    <button class="activity-button gym-button" style="background-color: #ff9999;" onclick="toggleInitialActivity('gym')">ジム</button>
-    <button class="activity-button pool-button" style="background-color: #99ccff;" onclick="toggleInitialActivity('pool')">プール</button>
-    <button class="activity-button yoga-button" style="background-color: #cc99ff;" onclick="toggleInitialActivity('yoga')">ヨガ</button>
-</div>
-    <button onclick="handleInitialDecision()">決定</button>
-</div>
+    <div id="initial-screen" class="screen active">
+        <h2>今日はどこに行く？</h2>
+        <div>
+            <button onclick="toggleActivity('gym')" class="activity-button" style="background-color: #ff9999;">ジム</button>
+            <button onclick="toggleActivity('pool')" class="activity-button" style="background-color: #99ccff;">プール</button>
+            <button onclick="toggleActivity('yoga')" class="activity-button" style="background-color: #cc99ff;">ヨガ</button>
+        </div>
+        <button onclick="checkSchedule()">決定</button>
+    </div>
 
-    <div class="message-screen">
+    <div id="message-screen" class="screen">
         <div id="message"></div>
     </div>
 
-    <div class="calendar-screen">
-        <select class="month-selector" id="monthSelector"></select>
-        <div class="calendar" id="calendar"></div>
-        <div id="monthlyStats"></div>
+    <div id="calendar-screen" class="screen">
+        <select id="month-selector" onchange="updateCalendar()"></select>
+        <div id="calendar"></div>
+        <div id="stats"></div>
         
-        <div class="today-activities">
+        <div>
             <h3>今日はどれをした？</h3>
-            <div id="todayButtons"></div>
-            <button onclick="handleTodayActivities()">決定</button>
+            <div id="activity-buttons"></div>
+            <button onclick="saveActivities()">決定</button>
         </div>
     </div>
-<script>
-    let initialSelectedActivities = new Set();
-    let gymData = JSON.parse(localStorage.getItem('activityData')) || {};
-    let selectedActivities = new Set();
 
-    function saveData() {
-        localStorage.setItem('activityData', JSON.stringify(gymData));
-    }
+    <script>
+        let selectedActivities = new Set();
+        let data = JSON.parse(localStorage.getItem('activityData')) || {};
 
-    function showMessage(message, isError = false) {
-        document.querySelector('.question-screen').style.display = 'none';
-        const messageScreen = document.querySelector('.message-screen');
-        const messageDiv = document.getElementById('message');
-        messageScreen.style.display = 'block';
-        messageDiv.className = isError ? 'message-red' : 'message-green';
-        messageDiv.textContent = message;
-
-        setTimeout(() => {
-            showCalendar();
-        }, 2000);
-    }
-
-    function toggleInitialActivity(activity) {
-        const button = document.querySelector(`.${activity}-button`);
-        if (initialSelectedActivities.has(activity)) {
-            initialSelectedActivities.delete(activity);
-            button.classList.remove('selected');
-        } else {
-            initialSelectedActivities.add(activity);
-            button.classList.add('selected');
-        }
-    }
-
-    function handleInitialDecision() {
-        const today = new Date();
-        const isMonday = today.getDay() === 1;
-        const isFriday = today.getDay() === 5;
-
-        if (isMonday && (initialSelectedActivities.has('gym') || initialSelectedActivities.has('pool'))) {
-            showMessage('今日はジムとプールは定休日だよ！', true);
-        } else if (isFriday && initialSelectedActivities.has('yoga')) {
-            showMessage('今日はヨガは定休日だよ！', true);
-        } else {
-            showMessage('選択完了！');
-        }
-        initialSelectedActivities.clear();
-    }
-
-    function toggleActivity(activity) {
-        const button = document.querySelector(`.${activity}-button`);
-        if (selectedActivities.has(activity)) {
-            selectedActivities.delete(activity);
-            button.classList.remove('selected');
-        } else {
-            selectedActivities.add(activity);
-            button.classList.add('selected');
-        }
-    }
-
-    function handleTodayActivities() {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
-        
-        if (selectedActivities.size > 0) {
-            gymData[dateStr] = Array.from(selectedActivities);
-            saveData();
-            updateCalendar();
-            selectedActivities.clear();
-            
-            document.querySelectorAll('.activity-button').forEach(button => {
-                button.classList.remove('selected');
-            });
-        }
-    }
-
-    function updateTodayButtons() {
-        const today = new Date();
-        const isMonday = today.getDay() === 1;
-        const isFriday = today.getDay() === 5;
-        const buttonContainer = document.getElementById('todayButtons');
-        buttonContainer.innerHTML = '';
-
-        const allActivities = [
-            { id: 'gym', name: 'ジム', color: '#ff9999' },
-            { id: 'pool', name: 'プール', color: '#99ccff' },
-            { id: 'yoga', name: 'ヨガ', color: '#cc99ff' },
-            { id: 'breathing', name: '呼吸はした', color: '#f5e6d3' }
-        ];
-
-        let availableActivities = [...allActivities];
-        if (isMonday) {
-            availableActivities = allActivities.filter(a => a.id !== 'gym' && a.id !== 'pool');
-        } else if (isFriday) {
-            availableActivities = allActivities.filter(a => a.id !== 'yoga');
-        }
-
-        availableActivities.forEach(activity => {
-            const button = document.createElement('button');
-            button.className = `activity-button ${activity.id}-button`;
-            button.style.backgroundColor = activity.color;
-            button.textContent = activity.name;
-            button.onclick = () => toggleActivity(activity.id);
-            buttonContainer.appendChild(button);
-        });
-    }
-
-    function showCalendar() {
-        document.querySelector('.message-screen').style.display = 'none';
-        document.querySelector('.calendar-screen').style.display = 'block';
-        
-        const today = new Date();
-        const monthSelector = document.getElementById('monthSelector');
-        monthSelector.innerHTML = '';
-        
-        for (let i = 1; i <= 12; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `${i}月`;
-            if (i === today.getMonth() + 1) {
-                option.selected = true;
-            }
-            monthSelector.appendChild(option);
-        }
-        
-        updateCalendar();
-        updateTodayButtons();
-    }
-
-    function updateCalendar() {
-        const year = new Date().getFullYear();
-        const month = parseInt(document.getElementById('monthSelector').value);
-        const firstDay = new Date(year, month - 1, 1);
-        const lastDay = new Date(year, month, 0);
-        
-        let calendarHTML = '<table><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr><tr>';
-        
-        for (let i = 0; i < firstDay.getDay(); i++) {
-            calendarHTML += '<td></td>';
-        }
-        
-        let stats = {
-            gym: 0,
-            pool: 0,
-            yoga: 0,
-            breathing: 0
-        };
-
-        for (let day = 1; day <= lastDay.getDate(); day++) {
-            const date = new Date(year, month - 1, day);
-            const dateStr = date.toISOString().split('T')[0];
-            
-            if (date.getDay() === 0 && day !== 1) {
-                calendarHTML += '</tr><tr>';
-            }
-            
-            let className = '';
-            const isMonday = date.getDay() === 1;
-            const isFriday = date.getDay() === 5;
-
-            if (isMonday || isFriday) {
-                className = 'default-monday-friday';
-            }
-
-            let cellStyle = '';
-            if (gymData[dateStr] && gymData[dateStr].length > 0) {
-                const activities = gymData[dateStr];
-                activities.forEach(activity => stats[activity]++);
-                
-                const gradient = createGradient(activities);
-                cellStyle = `style="background: ${gradient}"`;
-            }
-
-            calendarHTML += `<td class="${className}" ${cellStyle}>${day}</td>`;
-        }
-        
-        calendarHTML += '</tr></table>';
-        document.getElementById('calendar').innerHTML = calendarHTML;
-        
-        const statsHTML = `
-            <div class="activity-stats">
-                <p>今月の記録：</p>
-                <p>ジム: ${stats.gym}日</p>
-                <p>プール: ${stats.pool}日</p>
-                <p>ヨガ: ${stats.yoga}日</p>
-                <p>呼吸: ${stats.breathing}日</p>
-            </div>
-        `;
-        document.getElementById('monthlyStats').innerHTML = statsHTML;
-    }
-
-    function createGradient(activities) {
-        const colors = {
+        const COLORS = {
             gym: '#ff9999',
             pool: '#99ccff',
             yoga: '#cc99ff',
             breathing: '#f5e6d3'
         };
 
-        if (activities.length === 1) {
-            return colors[activities[0]];
+        const NAMES = {
+            gym: 'ジム',
+            pool: 'プール',
+            yoga: 'ヨガ',
+            breathing: '呼吸はした'
+        };
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
-        const percentage = 100 / activities.length;
-        let gradientString = 'linear-gradient(to right';
-        
-        activities.forEach((activity, index) => {
-            const start = (index * percentage);
-            const end = ((index + 1) * percentage);
-            gradientString += `, ${colors[activity]} ${start}% ${end}%`;
-        });
-        
-        return gradientString + ')';
-    }
-
-    document.getElementById('monthSelector').addEventListener('change', updateCalendar);
-
-    function checkDate() {
-        const lastCheck = localStorage.getItem('lastCheck');
-        const today = new Date().toISOString().split('T')[0];
-        
-        if (lastCheck !== today) {
-            localStorage.setItem('lastCheck', today);
-            location.reload();
+        function toggleActivity(activity) {
+            const button = event.target;
+            if (selectedActivities.has(activity)) {
+                selectedActivities.delete(activity);
+                button.classList.remove('selected');
+            } else {
+                selectedActivities.add(activity);
+                button.classList.add('selected');
+            }
         }
-    }
 
-    setInterval(checkDate, 60000);
-    checkDate();
-</script>
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${isError ? 'error' : 'success'}`;
+            messageDiv.textContent = text;
+            showScreen('message-screen');
+            setTimeout(() => {
+                showCalendarScreen();
+            }, 2000);
+        }
+
+        function checkSchedule() {
+            const today = new Date();
+            const isMonday = today.getDay() === 1;
+            const isFriday = today.getDay() === 5;
+
+            if (isMonday && (selectedActivities.has('gym') || selectedActivities.has('pool'))) {
+                showMessage('今日はジムとプールは定休日だよ！', true);
+            } else if (isFriday && selectedActivities.has('yoga')) {
+                showMessage('今日はヨガは定休日だよ！', true);
+            } else {
+                showMessage('選択完了！');
+            }
+            selectedActivities.clear();
+        }
+
+        function showCalendarScreen() {
+            showScreen('calendar-screen');
+            updateMonthSelector();
+            updateCalendar();
+            updateActivityButtons();
+        }
+
+        function updateMonthSelector() {
+            const select = document.getElementById('month-selector');
+            select.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i}月`;
+                if (i === new Date().getMonth() + 1) option.selected = true;
+                select.appendChild(option);
+            }
+        }
+
+        function updateActivityButtons() {
+            const container = document.getElementById('activity-buttons');
+            container.innerHTML = '';
+            
+            const today = new Date();
+            const isMonday = today.getDay() === 1;
+            const isFriday = today.getDay() === 5;
+
+            let activities = ['gym', 'pool', 'yoga', 'breathing'];
+            if (isMonday) {
+                activities = activities.filter(a => a !== 'gym' && a !== 'pool');
+            } else if (isFriday) {
+                activities = activities.filter(a => a !== 'yoga');
+            }
+
+            activities.forEach(activity => {
+                const button = document.createElement('button');
+                button.className = 'activity-button';
+                button.style.backgroundColor = COLORS[activity];
+                button.onclick = () => toggleActivity(activity);
+                button.textContent = NAMES[activity];
+                container.appendChild(button);
+            });
+        }
+
+        function saveActivities() {
+            if (selectedActivities.size > 0) {
+                const today = new Date().toISOString().split('T')[0];
+                data[today] = Array.from(selectedActivities);
+                localStorage.setItem('activityData', JSON.stringify(data));
+                selectedActivities.clear();
+                updateCalendar();
+                document.querySelectorAll('.activity-button').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            }
+        }
+
+        function updateCalendar() {
+            const month = parseInt(document.getElementById('month-selector').value);
+            const year = new Date().getFullYear();
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+
+            let html = '<table><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr><tr>';
+            
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                html += '<td></td>';
+            }
+
+            let stats = {gym: 0, pool: 0, yoga: 0, breathing: 0};
+
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                if (firstDay.getDay() + day - 1 > 0 && (firstDay.getDay() + day - 1) % 7 === 0) {
+                    html += '</tr><tr>';
+                }
+
+                const date = new Date(year, month - 1, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const isRestDay = date.getDay() === 1 || date.getDay() === 5;
+
+                let style = isRestDay ? 'class="rest-day"' : '';
+                if (data[dateStr]) {
+                    data[dateStr].forEach(activity => stats[activity]++);
+                    const gradient = createGradient(data[dateStr]);
+                    style = `style="background: ${gradient}"`;
+                }
+
+                html += `<td ${style}>${day}</td>`;
+            }
+
+            html += '</tr></table>';
+            document.getElementById('calendar').innerHTML = html;
+            
+            let statsHtml = '<div class="stats">';
+            for (const [activity, count] of Object.entries(stats)) {
+                statsHtml += `<p>${NAMES[activity]}: ${count}日</p>`;
+            }
+            statsHtml += '</div>';
+            document.getElementById('stats').innerHTML = statsHtml;
+        }
+
+        function createGradient(activities) {
+            if (activities.length === 1) return COLORS[activities[0]];
+
+            const percentage = 100 / activities.length;
+            return 'linear-gradient(to right, ' + 
+                activities.map((activity, index) => 
+                    `${COLORS[activity]} ${index * percentage}% ${(index + 1) * percentage}%`
+                ).join(', ') + ')';
+        }
+
+        // 日付チェック
+        function checkDate() {
+            const lastCheck = localStorage.getItem('lastCheck');
+            const today = new Date().toISOString().split('T')[0];
+            if (lastCheck !== today) {
+                localStorage.setItem('lastCheck', today);
+                location.reload();
+            }
+        }
+
+        setInterval(checkDate, 60000);
+        checkDate();
+    </script>
 </body>
 </html>
