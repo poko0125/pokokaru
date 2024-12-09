@@ -104,7 +104,11 @@
             padding: 5px;
             font-size: 16px;
         }
-
+.selected {
+    opacity: 0.7;
+    border: 2px solid #333;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
         .activity-stats {
             margin: 20px 0;
             text-align: left;
@@ -115,10 +119,10 @@
     <div class="question-screen">
     <h2>今日はどこに行く？</h2>
     <div class="activity-buttons">
-        <button class="activity-button gym-button" onclick="toggleInitialActivity('gym')">ジム</button>
-        <button class="activity-button pool-button" onclick="toggleInitialActivity('pool')">プール</button>
-        <button class="activity-button yoga-button" onclick="toggleInitialActivity('yoga')">ヨガ</button>
-    </div>
+    <button class="activity-button gym-button" style="background-color: #ff9999;" onclick="toggleInitialActivity('gym')">ジム</button>
+    <button class="activity-button pool-button" style="background-color: #99ccff;" onclick="toggleInitialActivity('pool')">プール</button>
+    <button class="activity-button yoga-button" style="background-color: #cc99ff;" onclick="toggleInitialActivity('yoga')">ヨガ</button>
+</div>
     <button onclick="handleInitialDecision()">決定</button>
 </div>
 
