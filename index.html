@@ -59,7 +59,7 @@
             border: 1px solid #ddd;
         }
 
-        .rest-day {
+        .default-monday-friday {
             background-color: #cccccc;
         }
 
@@ -67,11 +67,6 @@
             margin: 20px 0;
             padding: 5px;
             font-size: 16px;
-        }
-
-        .stats {
-            margin: 20px 0;
-            text-align: left;
         }
 
         .message {
@@ -93,15 +88,15 @@
     <div id="initial-screen" class="screen active">
         <h2>今日はどこに行く？</h2>
         <div>
-            <button onclick="toggleActivity('gym')" class="activity-button" style="background-color: #ff9999;">ジム</button>
-            <button onclick="toggleActivity('pool')" class="activity-button" style="background-color: #99ccff;">プール</button>
-            <button onclick="toggleActivity('yoga')" class="activity-button" style="background-color: #cc99ff;">ヨガ</button>
+            <button class="activity-button" style="background-color: #ff9999;" onclick="toggleInitialActivity(this, 'gym')">ジム</button>
+            <button class="activity-button" style="background-color: #99ccff;" onclick="toggleInitialActivity(this, 'pool')">プール</button>
+            <button class="activity-button" style="background-color: #cc99ff;" onclick="toggleInitialActivity(this, 'yoga')">ヨガ</button>
         </div>
         <button onclick="checkSchedule()">決定</button>
     </div>
 
     <div id="message-screen" class="screen">
-        <div id="message"></div>
+        <div id="message" class="message"></div>
     </div>
 
     <div id="calendar-screen" class="screen">
@@ -109,7 +104,7 @@
         <div id="calendar"></div>
         <div id="stats"></div>
         
-        <div>
+        <div id="today-activities">
             <h3>今日はどれをした？</h3>
             <div id="activity-buttons"></div>
             <button onclick="saveActivities()">決定</button>
@@ -117,30 +112,17 @@
     </div>
 
     <script>
+        const ACTIVITIES = {
+            gym: { name: 'ジム', color: '#ff9999', availableDays: [2,3,4,6,0] },
+            pool: { name: 'プール', color: '#99ccff', availableDays: [2,3,4,6,0] },
+            yoga: { name: 'ヨガ', color: '#cc99ff', availableDays: [0,1,2,3,4] },
+            breathing: { name: '呼吸はした', color: '#f5e6d3', availableDays: [0,1,2,3,4,5,6] }
+        };
+
         let selectedActivities = new Set();
         let data = JSON.parse(localStorage.getItem('activityData')) || {};
 
-        const COLORS = {
-            gym: '#ff9999',
-            pool: '#99ccff',
-            yoga: '#cc99ff',
-            breathing: '#f5e6d3'
-        };
-
-        const NAMES = {
-            gym: 'ジム',
-            pool: 'プール',
-            yoga: 'ヨガ',
-            breathing: '呼吸はした'
-        };
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        function toggleActivity(activity) {
-            const button = event.target;
+        function toggleInitialActivity(button, activity) {
             if (selectedActivities.has(activity)) {
                 selectedActivities.delete(activity);
                 button.classList.remove('selected');
@@ -148,6 +130,22 @@
                 selectedActivities.add(activity);
                 button.classList.add('selected');
             }
+        }
+
+        function toggleActivity(button, activity) {
+            if (selectedActivities.has(activity)) {
+                selectedActivities.delete(activity);
+                button.classList.remove('selected');
+            } else {
+                selectedActivities.add(activity);
+                button.classList.add('selected');
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(screen => 
+                screen.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
         function showMessage(text, isError = false) {
@@ -162,27 +160,59 @@
 
         function checkSchedule() {
             const today = new Date();
-            const isMonday = today.getDay() === 1;
-            const isFriday = today.getDay() === 5;
+            const dayOfWeek = today.getDay();
+            const isMonday = dayOfWeek === 1;
+            const isFriday = dayOfWeek === 5;
 
             if (isMonday && (selectedActivities.has('gym') || selectedActivities.has('pool'))) {
                 showMessage('今日はジムとプールは定休日だよ！', true);
             } else if (isFriday && selectedActivities.has('yoga')) {
                 showMessage('今日はヨガは定休日だよ！', true);
-            } else {
+            } else if (selectedActivities.size > 0) {
                 showMessage('選択完了！');
             }
             selectedActivities.clear();
         }
 
-        function showCalendarScreen() {
-            showScreen('calendar-screen');
-            updateMonthSelector();
-            updateCalendar();
-            updateActivityButtons();
+        function createActivityButton(activity) {
+            const button = document.createElement('button');
+            button.className = 'activity-button';
+            button.textContent = ACTIVITIES[activity].name;
+            button.style.backgroundColor = ACTIVITIES[activity].color;
+            button.onclick = () => toggleActivity(button, activity);
+            return button;
         }
 
-        function updateMonthSelector() {
+        function updateActivityButtons() {
+            const container = document.getElementById('activity-buttons');
+            container.innerHTML = '';
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+
+            Object.keys(ACTIVITIES).forEach(activity => {
+                if (ACTIVITIES[activity].availableDays.includes(dayOfWeek)) {
+                    container.appendChild(createActivityButton(activity));
+                }
+            });
+        }
+
+        function saveActivities() {
+            if (selectedActivities.size > 0) {
+                const today = new Date().toISOString().split('T')[0];
+                data[today] = Array.from(selectedActivities);
+                localStorage.setItem('activityData', JSON.stringify(data));
+                updateCalendar();
+                selectedActivities.clear();
+                document.querySelectorAll('.activity-button').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            }
+        }
+
+        function showCalendarScreen() {
+            showScreen('calendar-screen');
+            selectedActivities.clear();
+            
             const select = document.getElementById('month-selector');
             select.innerHTML = '';
             for (let i = 1; i <= 12; i++) {
@@ -192,101 +222,74 @@
                 if (i === new Date().getMonth() + 1) option.selected = true;
                 select.appendChild(option);
             }
-        }
-
-        function updateActivityButtons() {
-            const container = document.getElementById('activity-buttons');
-            container.innerHTML = '';
             
-            const today = new Date();
-            const isMonday = today.getDay() === 1;
-            const isFriday = today.getDay() === 5;
-
-            let activities = ['gym', 'pool', 'yoga', 'breathing'];
-            if (isMonday) {
-                activities = activities.filter(a => a !== 'gym' && a !== 'pool');
-            } else if (isFriday) {
-                activities = activities.filter(a => a !== 'yoga');
-            }
-
-            activities.forEach(activity => {
-                const button = document.createElement('button');
-                button.className = 'activity-button';
-                button.style.backgroundColor = COLORS[activity];
-                button.onclick = () => toggleActivity(activity);
-                button.textContent = NAMES[activity];
-                container.appendChild(button);
-            });
-        }
-
-        function saveActivities() {
-            if (selectedActivities.size > 0) {
-                const today = new Date().toISOString().split('T')[0];
-                data[today] = Array.from(selectedActivities);
-                localStorage.setItem('activityData', JSON.stringify(data));
-                selectedActivities.clear();
-                updateCalendar();
-                document.querySelectorAll('.activity-button').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-            }
+            updateCalendar();
+            updateActivityButtons();
         }
 
         function updateCalendar() {
-            const month = parseInt(document.getElementById('month-selector').value);
             const year = new Date().getFullYear();
+            const month = parseInt(document.getElementById('month-selector').value);
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
-
+            
             let html = '<table><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr><tr>';
             
             for (let i = 0; i < firstDay.getDay(); i++) {
                 html += '<td></td>';
             }
-
-            let stats = {gym: 0, pool: 0, yoga: 0, breathing: 0};
+            
+            let stats = Object.keys(ACTIVITIES).reduce((acc, key) => {
+                acc[key] = 0;
+                return acc;
+            }, {});
 
             for (let day = 1; day <= lastDay.getDate(); day++) {
-                if (firstDay.getDay() + day - 1 > 0 && (firstDay.getDay() + day - 1) % 7 === 0) {
+                if ((firstDay.getDay() + day - 1) % 7 === 0 && day !== 1) {
                     html += '</tr><tr>';
                 }
 
                 const date = new Date(year, month - 1, day);
                 const dateStr = date.toISOString().split('T')[0];
-                const isRestDay = date.getDay() === 1 || date.getDay() === 5;
+                const dayOfWeek = date.getDay();
+                const isRestDay = dayOfWeek === 1 || dayOfWeek === 5;
 
-                let style = isRestDay ? 'class="rest-day"' : '';
-                if (data[dateStr]) {
+                let className = isRestDay ? 'default-monday-friday' : '';
+                let style = '';
+
+                if (data[dateStr] && data[dateStr].length > 0) {
                     data[dateStr].forEach(activity => stats[activity]++);
-                    const gradient = createGradient(data[dateStr]);
-                    style = `style="background: ${gradient}"`;
+                    const activities = data[dateStr];
+                    const gradient = createGradient(activities);
+                    style = `background: ${gradient}`;
                 }
 
-                html += `<td ${style}>${day}</td>`;
+                html += `<td class="${className}" style="${style}">${day}</td>`;
             }
-
+            
             html += '</tr></table>';
             document.getElementById('calendar').innerHTML = html;
-            
-            let statsHtml = '<div class="stats">';
-            for (const [activity, count] of Object.entries(stats)) {
-                statsHtml += `<p>${NAMES[activity]}: ${count}日</p>`;
-            }
-            statsHtml += '</div>';
-            document.getElementById('stats').innerHTML = statsHtml;
+
+            const statsHtml = Object.entries(stats)
+                .map(([activity, count]) => 
+                    `<p>${ACTIVITIES[activity].name}: ${count}日</p>`)
+                .join('');
+            document.getElementById('stats').innerHTML = 
+                `<div class="stats">${statsHtml}</div>`;
         }
 
         function createGradient(activities) {
-            if (activities.length === 1) return COLORS[activities[0]];
+            if (activities.length === 1) {
+                return ACTIVITIES[activities[0]].color;
+            }
 
             const percentage = 100 / activities.length;
             return 'linear-gradient(to right, ' + 
                 activities.map((activity, index) => 
-                    `${COLORS[activity]} ${index * percentage}% ${(index + 1) * percentage}%`
-                ).join(', ') + ')';
+                    `${ACTIVITIES[activity].color} ${index * percentage}% ${(index + 1) * percentage}%`)
+                .join(', ') + ')';
         }
 
-        // 日付チェック
         function checkDate() {
             const lastCheck = localStorage.getItem('lastCheck');
             const today = new Date().toISOString().split('T')[0];
