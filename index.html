@@ -10,7 +10,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -45,47 +45,53 @@
             box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
 
-       .calendar {
-    margin: 20px auto;
-    width: 100%;
-}
+        /* カレンダー関連のスタイルを修正 */
+        .calendar {
+            margin: 20px auto;
+            width: 100%;
+        }
 
-.calendar table {
-    width: 100%;
-    max-width: 1200px;
-    border-collapse: collapse;
-    margin: 0 auto;
-    font-size: 24px;
-    table-layout: fixed;
-}
+        .calendar table {
+            width: 100%;
+            max-width: 1200px;
+            border-collapse: collapse;
+            margin: 0 auto;
+            font-size: 24px;
+            table-layout: fixed;
+        }
 
-.calendar th, .calendar td {
-    padding: 25px;
-    border: 1px solid #ddd;
-    text-align: center;
-    width: calc(100% / 7);
-    height: 100px;
-    vertical-align: middle;
-}
+        .calendar th, .calendar td {
+            padding: 25px;
+            border: 1px solid #ddd;
+            text-align: center;
+            width: calc(100% / 7);
+            height: 100px;
+            vertical-align: middle;
+        }
 
-.calendar th {
-    background-color: #f8f9fa;
-    font-weight: normal;
-}
+        .calendar th {
+            background-color: #f8f9fa;
+            font-weight: normal;
+            padding: 15px;
+        }
+
         .default-monday-friday {
             background-color: #cccccc;
         }
 
         .month-selector {
             margin: 20px 0;
-            padding: 5px;
-            font-size: 16px;
+            padding: 8px 15px;
+            font-size: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
         }
 
         .message {
             padding: 20px;
             border-radius: 5px;
             margin: 20px 0;
+            font-size: 18px;
         }
 
         .message.error {
@@ -94,6 +100,16 @@
 
         .message.success {
             background-color: lightgreen;
+        }
+
+        #today-activities {
+            margin-top: 30px;
+        }
+
+        .stats {
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: center;
         }
     </style>
 </head>
